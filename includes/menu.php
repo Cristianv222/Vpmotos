@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,13 +26,6 @@
     </div>
     <button class="menu-toggle">☰</button>
   </header>
-
-  <main>
-    <section id="home">
-      <h1>Bienvenido</h1>
-    </section>
-    <!-- Más contenido -->
-  </main>
 
   <script src="includes.js"></script>
 </body>
