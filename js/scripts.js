@@ -74,7 +74,7 @@ class Carousel {
     startAutoSlide() {
         this.autoSlideInterval = setInterval(() => {
             this.nextSlide();
-        }, 8000);
+        }, 10000);
     }
 
     stopAutoSlide() {
@@ -85,14 +85,14 @@ class Carousel {
 // Ejemplo de uso
 const slidesData = [
     {
-        image: '/api/placeholder/1200/600',
+        image: '../images/poratada_1.png',
         title: 'Título de Slide 1',
         description: 'Descripción detallada del primer slide con información interesante.',
         link: '#slide1',
         buttonText: 'Más Información'
     },
     {
-        image: '/api/placeholder/1200/600',
+        image: '../images/poratada_1.png',
         title: 'Título de Slide 2',
         description: 'Descripción detallada del segundo slide con información relevante.',
         link: '#slide2',

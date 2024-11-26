@@ -11,7 +11,7 @@
 
 </head>
 <body>
-
+<?php include './includes/menu.php'; ?>
   <header>
   <div class="carousel-container">
         <div class="carousel">
