@@ -34,7 +34,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 50px;
+            padding: 5px 80px;
             background-color: transparent;
             z-index: 1000;
             transition: all 0.3s ease;
@@ -52,7 +52,7 @@
         }
 
         .logo img {
-            height: 50px;
+            height: 110px;
             cursor: pointer;
         }
 
@@ -85,7 +85,7 @@
         .vertical-line {
             height: 30px;
             width: 1px;
-            background-color: rgba(255,255,255,0.7);
+            background-color: rgba(66, 218, 6, 0.966);
             margin: 0 15px;
             transition: background-color 0.3s ease;
         }
