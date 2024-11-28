@@ -61,7 +61,7 @@
         .vertical-line {
             height: 30px;
             width: 1px;
-            background-color: #ccc;
+            background-color: rgba(66, 218, 6, 0.966);
             margin: 0 15px;
         }
 
