@@ -217,7 +217,7 @@
 
             <div class="nav-cta">
                 <div class="vertical-line"></div>
-                <a href="#" class="cta-button">Botón de Acción</a>
+                <a href="#" class="cta-button">Registrate</a>
             </div>
 
             <!-- Menú Hamburguesa -->
