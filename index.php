@@ -25,13 +25,31 @@
             <!-- Indicadores se añadirán dinámicamente con JavaScript -->
         </div>
   </header>
-<main>
-    <div>
-        <h1>
-            Hola mundo
-        </h1>
+  <div class="carousel-container">
+    <div class="carousel-item">
+      <img src="/api/placeholder/400/300" alt="Placeholder Image 1">
+      <button class="open-modal" data-modal-id="modal1">Learn More</button>
+      <div class="modal" id="modal1">
+        <div class="modal-content">
+          <span class="close-modal">&times;</span>
+          <h2>Game 1</h2>
+          <p>This is a description of the first game in the carousel.</p>
+        </div>
+      </div>
     </div>
-</main>
+    <div class="carousel-item">
+      <img src="/api/placeholder/400/300" alt="Placeholder Image 2">
+      <button class="open-modal" data-modal-id="modal2">Learn More</button>
+      <div class="modal" id="modal2">
+        <div class="modal-content">
+          <span class="close-modal">&times;</span>
+          <h2>Game 2</h2>
+          <p>This is a description of the second game in the carousel.</p>
+        </div>
+      </div>
+    </div>
+    <!-- Add more carousel items as needed -->
+  </div>
   <script src="./js/scripts.js"></script>
 </body>
 </html>

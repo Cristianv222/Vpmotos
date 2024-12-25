@@ -108,3 +108,28 @@ const slidesData = [
 ];
 
 new Carousel('.carousel-container', slidesData);
+///////////////////////////
+
+const modals = document.querySelectorAll('.modal');
+const openModalButtons = document.querySelectorAll('.open-modal');
+const closeModalButtons = document.querySelectorAll('.close-modal');
+
+openModalButtons.forEach((button, index) => {
+  button.addEventListener('click', () => {
+    modals[index].style.display = 'block';
+  });
+});
+
+closeModalButtons.forEach((button, index) => {
+  button.addEventListener('click', () => {
+    modals[index].style.display = 'none';
+  });
+});
+
+window.addEventListener('click', (event) => {
+  modals.forEach((modal) => {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
