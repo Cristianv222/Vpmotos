@@ -1,135 +1,92 @@
-class Carousel {
-    constructor(container, slides) {
-        this.container = document.querySelector(container);
-        this.carouselElement = this.container.querySelector('.carousel');
-        this.indicatorsContainer = this.container.querySelector('.carousel-indicators');
-        this.prevBtn = this.container.querySelector('.prev-btn');
-        this.nextBtn = this.container.querySelector('.next-btn');
-        this.slides = slides;
-        this.currentIndex = 0;
-        this.autoSlideInterval = null;
+let slideIndex = 0; 
+let isVideoPlaying = false;
 
-        this.initCarousel();
-        this.setupEventListeners();
-        this.startAutoSlide();
-    }
+// Inicializar el video cuando la página carga
+document.addEventListener('DOMContentLoaded', function() {
+  const video = document.getElementById('video-slide');
+  const volumeControl = document.querySelector('.volume-control');
+  
+  if (video) {
+    // Asegurarnos de que el video se reproduzca automáticamente
+    video.play().catch(function(error) {
+      console.log("Error al reproducir el video:", error);
+    });
 
-    initCarousel() {
-        this.slides.forEach((slide, index) => {
-            // Crear slide
-            const slideElement = document.createElement('div');
-            slideElement.classList.add('slide');
-            slideElement.innerHTML = `
-                <img src="${slide.image}" alt="${slide.title}">
-                <div class="slide-content">
-                    <div class="slide-text">
-                        <h2>${slide.title}</h2>
-                        <p>${slide.description}</p>
-                        <a href="${slide.link}" class="action-btn">${slide.buttonText}</a>
-                    </div>
-                </div>
-            `;
-            this.carouselElement.appendChild(slideElement);
+    // Manejar el control de volumen
+    volumeControl.addEventListener('input', function(e) {
+      video.volume = e.target.value;
+      if (video.volume > 0) {
+        video.muted = false;
+      } else {
+        video.muted = true;
+      }
+    });
 
-            // Crear indicador
-            const indicator = document.createElement('div');
-            indicator.classList.add('indicator');
-            if (index === 0) indicator.classList.add('active');
-            indicator.addEventListener('click', () => this.goToSlide(index));
-            this.indicatorsContainer.appendChild(indicator);
-        });
-    }
-
-    setupEventListeners() {
-        this.prevBtn.addEventListener('click', () => this.prevSlide());
-        this.nextBtn.addEventListener('click', () => this.nextSlide());
-    }
-
-    nextSlide() {
-        this.currentIndex = (this.currentIndex + 1) % this.slides.length;
-        this.updateCarousel();
-    }
-
-    prevSlide() {
-        this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
-        this.updateCarousel();
-    }
-
-    goToSlide(index) {
-        this.currentIndex = index;
-        this.updateCarousel();
-    }
-
-    updateCarousel() {
-        const offset = -this.currentIndex * 100;
-        this.carouselElement.style.transform = `translateX(${offset}%)`;
-
-        // Actualizar indicadores
-        const indicators = this.indicatorsContainer.querySelectorAll('.indicator');
-        indicators.forEach((indicator, index) => {
-            indicator.classList.toggle('active', index === this.currentIndex);
-        });
-    }
-
-    startAutoSlide() {
-        this.autoSlideInterval = setInterval(() => {
-            this.nextSlide();
-        }, 10000);
-    }
-
-    stopAutoSlide() {
-        clearInterval(this.autoSlideInterval);
-    }
-}
-
-// Ejemplo de uso
-const slidesData = [
-    {
-        image: '../images/poratada_1.png',
-        title: 'Título de Slide 1',
-        description: 'Descripción detallada del primer slide con información interesante.',
-        link: '#slide1',
-        buttonText: 'Más Información'
-    },
-    {
-        image: '../images/poratada_1.png',
-        title: 'Título de Slide 2',
-        description: 'Descripción detallada del segundo slide con información relevante.',
-        link: '#slide2',
-        buttonText: 'Explorar'
-    },
-    {
-        image: '/api/placeholder/1200/600',
-        title: 'Título de Slide 3',
-        description: 'Descripción detallada del tercer slide con información adicional.',
-        link: '#slide3',
-        buttonText: 'Descubrir'
-    }
-];
-
-new Carousel('.carousel-container', slidesData);
-///////////////////////////
-
-const modals = document.querySelectorAll('.modal');
-const openModalButtons = document.querySelectorAll('.open-modal');
-const closeModalButtons = document.querySelectorAll('.close-modal');
-
-openModalButtons.forEach((button, index) => {
-  button.addEventListener('click', () => {
-    modals[index].style.display = 'block';
-  });
+    // Prevenir que el usuario pause el video
+    video.addEventListener('pause', function() {
+      if (!video.ended) {
+        video.play();
+      }
+    });
+  }
 });
 
-closeModalButtons.forEach((button, index) => {
-  button.addEventListener('click', () => {
-    modals[index].style.display = 'none';
-  });
-});
+function moveSlide(step) { 
+  const slides = document.querySelectorAll('.slide'); 
+  const video = document.getElementById('video-slide'); 
+ 
+  slideIndex += step; 
+ 
+  if (slideIndex < 0) { 
+    slideIndex = slides.length - 1;
+  } else if (slideIndex >= slides.length) { 
+    slideIndex = 0;
+  } 
+ 
+  document.querySelector('.carrusel').style.transform = `translateX(${-slideIndex * 100}%)`; 
+} 
 
-window.addEventListener('click', (event) => {
-  modals.forEach((modal) => {
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
-  });
+// Iniciar el carrusel
+let intervalId = setInterval(() => { 
+  moveSlide(1); 
+}, 80000);
+
+//seccion carrusel infinito
+document.addEventListener('DOMContentLoaded', () => {
+  const infiniteCarousel = document.querySelector('.infinite-carousel');
+  let dragStart = null;
+  let currentRotation = 0;
+
+  const handleStart = (e) => {
+    dragStart = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+    infiniteCarousel.style.animation = 'none';
+  };
+
+  const handleMove = (e) => {
+    if (dragStart === null) return;
+    
+    const currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+    const delta = currentX - dragStart;
+    const rotation = (delta / 5) + currentRotation;
+    infiniteCarousel.style.transform = `rotateY(${rotation}deg)`;
+  };
+
+  const handleEnd = (e) => {
+    if (dragStart === null) return;
+    
+    const currentX = e.type === 'mouseup' ? e.clientX : 
+                    e.type === 'touchend' ? e.changedTouches[0].clientX : 
+                    dragStart;
+    currentRotation = (currentX - dragStart) / 5 + currentRotation;
+    dragStart = null;
+    infiniteCarousel.style.animation = 'infinite-spin 30s infinite linear';
+  };
+
+  infiniteCarousel.addEventListener('mousedown', handleStart);
+  document.addEventListener('mousemove', handleMove);
+  document.addEventListener('mouseup', handleEnd);
+
+  infiniteCarousel.addEventListener('touchstart', handleStart);
+  document.addEventListener('touchmove', handleMove);
+  document.addEventListener('touchend', handleEnd);
 });

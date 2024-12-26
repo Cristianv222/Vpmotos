@@ -1,214 +1,149 @@
-@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Contenedor principal del carrusel */
+.carrusel-container {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* Hacer que el carrusel ocupe toda la altura de la ventana */
+  overflow: hidden;
+  clip-path: polygon(50% 0, 100% 0, 100% 80%, 50% 100%, 0 80%, 0 0);  
 }
-body{
-    font-family: Orbitron, sans-serif;
+
+/* Estilo del carrusel */
+.carrusel {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+  width: 100%;
 }
-.carousel-container {
-    width: 100%;
-    height: 100vh;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-}
-.carousel {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.5s ease;
-}
+
+/* Estilo de cada slide */
 .slide {
-    min-width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    position: relative;
+  min-width: 100%;
+  height: 100%; /* Aseguramos que las imágenes y videos ocupen todo el alto del contenedor */
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-.slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.volume-control {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 100px;
+  z-index: 2;
 }
-.slide-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 20px;
+/* Estilo de las imágenes y videos */
+.slide img, .slide video {
+  width: 100%;
+  height: 100%; /* Ocupa toda la altura del contenedor */
+  object-fit: cover; /* Asegura que la imagen/video cubra toda el área sin deformarse */
 }
-.slide-text {
-    max-width: 50%;
-    padding: 20px;
+
+/* Botones de navegación */
+.prev, .next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  padding: 15px;
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 10;
 }
-.slide-text h2 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
+
+.prev {
+  left: 10px;
 }
-.slide-text p {
-    font-size: 1.2rem;
-    margin-bottom: 20px;
+
+.next {
+  right: 10px;
 }
-.action-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
+
+.prev:hover, .next:hover {
+  background-color: rgba(0, 0, 0, 0.8);
 }
-.carousel-controls {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
+
+/* Estilos generales para la sección de servicios */
+.servicios {
+  padding: 50px;
+  text-align: center;
+  background-image: url('../images/imagen_servicios.jpg'); /* Cambia la ruta según donde tengas tu imagen */
+  background-position: center; /* Asegura que la imagen se centre */
+  background-repeat: no-repeat; /* Evita que la imagen se repita */
+  background-size: cover; /* La imagen cubrirá toda la sección */
+  background-attachment: fixed; /* La imagen se quedará fija mientras haces scroll */
+  color: white; /* Asegura que el texto se vea bien sobre la imagen */
 }
-.carousel-container:hover .carousel-controls {
-    opacity: 1;
+
+.servicios h2 {
+  font-size: 2em;
+  margin-bottom: 30px;
 }
-.control-btn {
-    background: transparent;
-    color: white;
-    border: 2px solid white;
-    font-size: 2rem;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin: 0 15px;
-    border-radius: 50%;
-    outline: none;
-    pointer-events: auto;
+
+.servicios-container {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
 }
-.control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+
+.servicio-card {
+  position: relative;
+  width: 300px;
+  height: 400px;
+  perspective: 1000px; /* Habilita la perspectiva 3D */
 }
-.carousel-indicators {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
+
+.front, .back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backface-visibility: hidden; /* Evita que el reverso se vea al voltear */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
 }
-.indicator {
-    width: 50px;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    transition: background 0.3s ease;
+
+.front {
+  background-color: #eaeaea;
+  overflow: hidden;
+  transition: transform 0.5s;
 }
-.indicator.active {
-    background: white;
+
+.front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
 }
-@media (max-width: 768px) {
-    .slide-content {
-        flex-direction: column;
-        justify-content: center;
-    }
-    .slide-text {
-        max-width: 100%;
-        text-align: center;
-    }
-    .control-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.5rem;
-        margin: 0 10px;
-    }
+
+.back {
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  transform: rotateY(180deg); /* Hace que la parte trasera esté inicialmente girada */
+  transition: transform 0.5s;
 }
-  /*carrusel de servicios*/
-  .carousel-container {
-    display: flex;
-    overflow-x: scroll;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding: 20px;
-  }
-  
-  .carousel-item {
-    flex: 0 0 auto;
-    width: 80%;
-    scroll-snap-align: start;
-    position: relative;
-    margin-right: 20px;
-  }
-  
-  .carousel-item img {
-    width: 100%;
-    height: auto;
-  }
-  
-  .open-modal {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #333;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    cursor: pointer;
-  }
-  
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-  }
-  
-  .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-  }
-  
-  .close-modal {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-  }
-  
-  .close-modal:hover,
-  .close-modal:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-  }
-  
-  @media (min-width: 768px) {
-    .carousel-item {
-      width: 50%;
-    }
-  }
-  
-  @media (min-width: 1200px) {
-    .carousel-item {
-      width: 33.33%;
-    }
+
+.servicio-card:hover .front {
+  transform: rotateY(180deg); /* Rota la parte delantera */
 }
+
+.servicio-card:hover .back {
+  transform: rotateY(0); /* Muestra el reverso */
+}
+
+h3 {
+  margin-bottom: 10px;
+}
+
+p {
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+

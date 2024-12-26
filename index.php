@@ -3,53 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./css/carruselinf.css">
   <link rel="stylesheet" href="./css/index.css">
   <title>Vpmotos</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-
 </head>
 <body>
 <?php include './includes/menu.php'; ?>
-  <header>
-  <div class="carousel-container">
-        <div class="carousel">
-            <!-- Slides se añadirán dinámicamente con JavaScript -->
-        </div>
-        <div class="carousel-controls">
-            <button class="control-btn prev-btn">&lt;</button>
-            <button class="control-btn next-btn">&gt;</button>
-        </div>
-        <div class="carousel-indicators">
-            <!-- Indicadores se añadirán dinámicamente con JavaScript -->
-        </div>
-  </header>
-  <div class="carousel-container">
-    <div class="carousel-item">
-      <img src="/api/placeholder/400/300" alt="Placeholder Image 1">
-      <button class="open-modal" data-modal-id="modal1">Learn More</button>
-      <div class="modal" id="modal1">
-        <div class="modal-content">
-          <span class="close-modal">&times;</span>
-          <h2>Game 1</h2>
-          <p>This is a description of the first game in the carousel.</p>
-        </div>
+<div class="carrusel-container">
+    <div class="carrusel">
+      <!-- Slide 1 - Imagen -->
+      <div class="slide">
+        <video controls>
+          <source src="./images/Motorcycle_Cinematic_Video.mp4" type="video/mp4">
+          Tu navegador no soporta el formato de video.
+        </video>
+        <input type="range" class="volume-control" min="0" max="1" step="0.1" value="0">
+      </div>
+      
+      <!-- Slide 2 - Imagen -->
+      <div class="slide">
+        <img src="./images/poratada_1.png" alt="Imagen 2">
+      </div>
+
+
+      <!-- Slide 4 - Imagen -->
+      <div class="slide">
+        <img src="./images/alamcen_VP.jpg" alt="Imagen 3">
       </div>
     </div>
-    <div class="carousel-item">
-      <img src="/api/placeholder/400/300" alt="Placeholder Image 2">
-      <button class="open-modal" data-modal-id="modal2">Learn More</button>
-      <div class="modal" id="modal2">
-        <div class="modal-content">
-          <span class="close-modal">&times;</span>
-          <h2>Game 2</h2>
-          <p>This is a description of the second game in the carousel.</p>
-        </div>
-      </div>
-    </div>
-    <!-- Add more carousel items as needed -->
+
+    <!-- Controles -->
+    <button class="prev" onclick="moveSlide(-1)">&#10094;</button>
+    <button class="next" onclick="moveSlide(1)">&#10095;</button>
   </div>
+
+  <main class="infinite-wrapper">
+  <div class="infinite-carousel">
+    <div class="infinite-item" style="background: url('./images/yam.jpg') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/bajaj1.JPG') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/Honda.png') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/ktm1.JPG') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/cfmoto.webp') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/Suzuki.webp') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images//Shineray.png') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/tuko.png') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/benelli2.jpeg') center/cover;"></div>
+    <div class="infinite-item" style="background: url('./images/Kawasaki.jpeg') center/cover;"></div>
+  </div>
+</main>
+
+  <section class="servicios">
+    <h2>Servicios que ofrecemos</h2>
+    <div class="servicios-container">
+      <div class="servicio-card">
+        <div class="front">
+          <img src="imagenes/servicio1.jpg" alt="Servicio 1">
+        </div>
+        <div class="back">
+          <h3>Servicio 1</h3>
+          <p>Descripción del servicio 1 que ofrecemos. Detalles sobre el servicio.</p>
+        </div>
+      </div>
+
+      <div class="servicio-card">
+        <div class="front">
+          <img src="imagenes/servicio2.jpg" alt="Servicio 2">
+        </div>
+        <div class="back">
+          <h3>Servicio 2</h3>
+          <p>Descripción del servicio 2 que ofrecemos. Detalles sobre el servicio.</p>
+        </div>
+      </div>
+
+      <div class="servicio-card">
+        <div class="front">
+          <img src="imagenes/servicio3.jpg" alt="Servicio 3">
+        </div>
+        <div class="back">
+          <h3>Servicio 3</h3>
+          <p>Descripción del servicio 3 que ofrecemos. Detalles sobre el servicio.</p>
+        </div>
+      </div>
+
+      <div class="servicio-card">
+        <div class="front">
+          <img src="imagenes/servicio3.jpg" alt="Servicio 4">
+        </div>
+        <div class="back">
+          <h3>Servicio 4 </h3>
+          <p>Descripción del servicio 4 que ofrecemos. Detalles sobre el servicio.</p>
+        </div>
+      </div>
+
+      <div class="servicio-card">
+        <div class="front">
+          <img src="imagenes/servicio3.jpg" alt="Servicio 5">
+        </div>
+        <div class="back">
+          <h3>Servicio 5 </h3>
+          <p>Descripción del servicio 4 que ofrecemos. Detalles sobre el servicio.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <?php include('./includes/footer.php'); ?>
   <script src="./js/scripts.js"></script>
 </body>
 </html>
