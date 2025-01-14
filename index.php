@@ -17,7 +17,6 @@
           <source src="./images/Motorcycle_Cinematic_Video.mp4" type="video/mp4">
           Tu navegador no soporta el formato de video.
         </video>
-        <input type="range" class="volume-control" min="0" max="1" step="0.1" value="0">
       </div>
       
       <!-- Slide 2 - Imagen -->
@@ -57,27 +56,35 @@
     <div class="servicios-container">
       <div class="servicio-card">
         <div class="front">
-          <img src="imagenes/servicio1.jpg" alt="Servicio 1">
+          <img src="./images/ABC.png" alt="Servicio 1">
         </div>
         <div class="back">
-          <h3>Servicio 1</h3>
-          <p>Descripción del servicio 1 que ofrecemos. Detalles sobre el servicio.</p>
+        <ol>
+    <li>Ajuste de presión de inflado de neumáticos</li>
+    <li>Limpieza o cambio de bujías</li>
+    <li>Limpieza, lubricación y ajuste de cadena</li>
+    <li>Reajuste de tornillería principal</li>
+    <li>Revisión y calibración de luces</li>
+    <li>Lubricación de maniguetas</li>
+    <li>Lubricación de cables (freno- embrague)</li>
+    <li>Limpieza del orificio del drenaje del silenciador</li>
+  </ol>
         </div>
       </div>
 
       <div class="servicio-card">
         <div class="front">
-          <img src="imagenes/servicio2.jpg" alt="Servicio 2">
+          <img src="./images/GASES.png" alt="Servicio 2">
         </div>
         <div class="back">
-          <h3>Servicio 2</h3>
-          <p>Descripción del servicio 2 que ofrecemos. Detalles sobre el servicio.</p>
+          <ol>
+          </ol>
         </div>
       </div>
 
       <div class="servicio-card">
         <div class="front">
-          <img src="imagenes/servicio3.jpg" alt="Servicio 3">
+          <img src="./images/INYECTORES.png" alt="Servicio 3">
         </div>
         <div class="back">
           <h3>Servicio 3</h3>
@@ -87,20 +94,10 @@
 
       <div class="servicio-card">
         <div class="front">
-          <img src="imagenes/servicio3.jpg" alt="Servicio 4">
+          <img src="./images/scaner.png" alt="Servicio 4">
         </div>
         <div class="back">
           <h3>Servicio 4 </h3>
-          <p>Descripción del servicio 4 que ofrecemos. Detalles sobre el servicio.</p>
-        </div>
-      </div>
-
-      <div class="servicio-card">
-        <div class="front">
-          <img src="imagenes/servicio3.jpg" alt="Servicio 5">
-        </div>
-        <div class="back">
-          <h3>Servicio 5 </h3>
           <p>Descripción del servicio 4 que ofrecemos. Detalles sobre el servicio.</p>
         </div>
       </div>

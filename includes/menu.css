@@ -6,9 +6,9 @@
 }
 
 :root {
-    --primary-color: #48ff00;
+    --primary-color: #D2ED05;
     --text-color-light: #fff;
-    --text-color-dark: #19dd19;
+    --text-color-dark: #D2ED05;
     --overlay-color: rgba(34, 34, 34, 0.596);
 }
 
