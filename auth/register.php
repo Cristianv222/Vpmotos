@@ -1,6 +1,66 @@
 <?php
 session_start();
-require_once '../config/config.php'; // Esto ahora debería funcionar porque $pdo está definido en config.php
+require_once '../config/config.php';
+require_once '../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+function enviarCorreoVerificacion($email, $username, $token) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Configuración del servidor
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';  // Ajusta esto según tu servidor SMTP
+        $mail->SMTPAuth = true;
+        $mail->Username = 'tu_correo@gmail.com'; // Tu correo
+        $mail->Password = 'tu_contraseña_de_aplicacion'; // Tu contraseña de aplicación
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+        $mail->CharSet = 'UTF-8';
+
+        // Remitente y destinatario
+        $mail->setFrom('tu_correo@gmail.com', 'Nombre de tu Sistema');
+        $mail->addAddress($email, $username);
+
+        // Contenido
+        $mail->isHTML(true);
+        $mail->Subject = 'Verifica tu cuenta';
+        
+        // URL de verificación (ajusta la URL base según tu configuración)
+        $verificationUrl = 'http://tudominio.com/auth/verify.php?token=' . $token;
+        
+        $mail->Body = '
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>¡Bienvenido a ' . htmlspecialchars('Nombre de tu Sistema') . '!</h2>
+                <p>Hola ' . htmlspecialchars($username) . ',</p>
+                <p>Gracias por registrarte. Para completar tu registro, por favor verifica tu cuenta haciendo clic en el siguiente botón:</p>
+                <p style="text-align: center;">
+                    <a href="' . $verificationUrl . '" 
+                       style="background-color: #4CAF50; color: white; padding: 12px 25px; 
+                              text-decoration: none; border-radius: 3px; display: inline-block;">
+                        Verificar cuenta
+                    </a>
+                </p>
+                <p>O copia y pega el siguiente enlace en tu navegador:</p>
+                <p>' . $verificationUrl . '</p>
+                <p>Este enlace expirará en 24 horas.</p>
+                <p>Si no creaste esta cuenta, puedes ignorar este mensaje.</p>
+            </div>';
+
+        $mail->AltBody = "Bienvenido a Nombre de tu Sistema!\n\n" .
+                        "Para verificar tu cuenta, visita el siguiente enlace:\n" .
+                        $verificationUrl;
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        error_log("Error al enviar correo de verificación: {$mail->ErrorInfo}");
+        return false;
+    }
+}
 
 $mensaje = '';
 
@@ -35,15 +95,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
                 // Insertar el nuevo usuario
-                $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, password_reset_token, token_expiration) VALUES (?, ?, ?, ?, NOW() + INTERVAL 1 DAY)");
+                $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, verification_token, token_expiration, verified) VALUES (?, ?, ?, ?, NOW() + INTERVAL 1 DAY, 0)");
                 
                 if($stmt->execute([$username, $email, $password_hash, $token])) {
-                    $mensaje = "Registro exitoso. Por favor, revisa tu correo para verificar tu cuenta.";
-                    // Aquí se podría agregar el código para enviar el correo de verificación
-                    // enviarCorreoVerificacion($email, $token);
-                    
-                    // Redirigir al login después de 3 segundos
-                    header("refresh:3;url=login.php");
+                    // Intentar enviar el correo de verificación
+                    if(enviarCorreoVerificacion($email, $username, $token)) {
+                        $mensaje = "Registro exitoso. Por favor, revisa tu correo para verificar tu cuenta.";
+                        // Redirigir al login después de 3 segundos
+                        header("refresh:3;url=login.php");
+                    } else {
+                        $mensaje = "Registro exitoso, pero hubo un problema al enviar el correo de verificación.";
+                    }
                 } else {
                     $mensaje = "Error al registrar el usuario.";
                 }
