@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once './config/config.php'; // Incluimos el archivo de conexión
+require_once '../config/config.php'; // Esto ahora debería funcionar porque $pdo está definido en config.php
 
 $mensaje = '';
 
@@ -23,96 +23,75 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($password !== $confirm_password) {
         $mensaje = "Las contraseñas no coinciden.";
     } else {
-        // Verificar si el correo ya está registrado
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            $mensaje = "Este correo electrónico ya está registrado.";
-        } else {
-            // Generar token de verificación
-            $token = bin2hex(random_bytes(32));
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        try {
+            // Verificar si el correo ya está registrado
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $mensaje = "Este correo electrónico ya está registrado.";
+            } else {
+                // Generar token de verificación
+                $token = bin2hex(random_bytes(32));
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insertar el nuevo usuario
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, password_reset_token, token_expiration) VALUES (?, ?, ?, ?, NOW() + INTERVAL 1 DAY)");
-            
-            try {
-                $stmt->execute([$username, $email, $password_hash, $token]);
-                $mensaje = "Registro exitoso. Por favor, revisa tu correo para verificar tu cuenta.";
+                // Insertar el nuevo usuario
+                $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, password_reset_token, token_expiration) VALUES (?, ?, ?, ?, NOW() + INTERVAL 1 DAY)");
                 
-                // Aquí se podría agregar el código para enviar el correo de verificación
-                // enviarCorreoVerificacion($email, $token);
-                
-                // Redirigir al login después de 3 segundos
-                header("refresh:3;url=login.php");
-            } catch(PDOException $e) {
-                $mensaje = "Error al registrar el usuario: " . $e->getMessage();
+                if($stmt->execute([$username, $email, $password_hash, $token])) {
+                    $mensaje = "Registro exitoso. Por favor, revisa tu correo para verificar tu cuenta.";
+                    // Aquí se podría agregar el código para enviar el correo de verificación
+                    // enviarCorreoVerificacion($email, $token);
+                    
+                    // Redirigir al login después de 3 segundos
+                    header("refresh:3;url=login.php");
+                } else {
+                    $mensaje = "Error al registrar el usuario.";
+                }
             }
+        } catch(PDOException $e) {
+            $mensaje = "Error al procesar la solicitud: " . $e->getMessage();
         }
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Usuario</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Registro</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-center">Registro de Usuario</h3>
-                    </div>
-                    <div class="card-body">
-                        <?php if (!empty($mensaje)): ?>
-                            <div class="alert <?php echo strpos($mensaje, 'exitoso') !== false ? 'alert-success' : 'alert-danger'; ?>">
-                                <?php echo $mensaje; ?>
-                            </div>
-                        <?php endif; ?>
-
-                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Nombre de usuario</label>
-                                <input type="text" class="form-control" id="username" name="username" 
-                                       value="<?php echo htmlspecialchars($username ?? ''); ?>" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Correo electrónico</label>
-                                <input type="email" class="form-control" id="email" name="email" 
-                                       value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
-                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                            </div>
-
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">Registrarse</button>
-                            </div>
-                        </form>
-
-                        <div class="text-center mt-3">
-                            <p>¿Ya tienes una cuenta? <a href="login.php">Inicia sesión aquí</a></p>
-                        </div>
-                    </div>
-                </div>
+<body>
+    <div class="container">
+        <?php if (!empty($mensaje)): ?>
+            <div class="alert <?php echo strpos($mensaje, 'exitoso') !== false ? 'alert-success' : 'alert-error'; ?>">
+                <?php echo $mensaje; ?>
             </div>
-        </div>
+        <?php endif; ?>
+        
+        <form method="POST" class="form">
+            <h2>Registro de Usuario</h2>
+            <div class="form-group">
+                <label>Usuario:</label>
+                <input type="text" name="username" required minlength="4" 
+                       value="<?php echo htmlspecialchars($username ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" name="email" required 
+                       value="<?php echo htmlspecialchars($email ?? ''); ?>">
+            </div>
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <input type="password" name="password" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label>Confirmar Contraseña:</label>
+                <input type="password" name="confirm_password" required minlength="6">
+            </div>
+            <button type="submit" class="btn">Registrarse</button>
+            <p>¿Ya tienes cuenta? <a href="login.php">Inicia sesión</a></p>
+        </form>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

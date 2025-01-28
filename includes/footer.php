@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../includes/footer.css">
+    <link rel="stylesheet" href="./footer.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
@@ -58,3 +58,94 @@
 
 </body>
 </html>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+.footer {
+    background: #141414;
+    color: white;
+    padding: 20px 40px;
+    font-family: Audiowide, sans-serif;
+  }
+  
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .footer-logo {
+    width: 150px;
+    height: 100px;
+  }
+  
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 14px;
+    margin-top: 20px;
+  }
+  
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .footer-nav {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .nav-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .nav-column a {
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  
+  .social-icons {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .social-icons img {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .newsletter {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .newsletter input {
+    padding: 8px;
+    width: 200px;
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+  }
+  
+  .newsletter button {
+    padding: 8px 20px;
+    background: #ff69b4;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+</style>
