@@ -13,7 +13,7 @@ function enviarCorreoVerificacion($email, $username, $token) {
     try {
         // Configuración del servidor
         $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';  // Ajusta esto según tu servidor SMTP
+        $mail->Host = '1029cristianvasquez@gmail.com';  // Ajusta esto según tu servidor SMTP
         $mail->SMTPAuth = true;
         $mail->Username = 'tu_correo@gmail.com'; // Tu correo
         $mail->Password = 'tu_contraseña_de_aplicacion'; // Tu contraseña de aplicación
