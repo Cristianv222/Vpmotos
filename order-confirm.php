@@ -12,7 +12,9 @@ $pedido_creado = null;
 // ── Caso 1: Ya hay resultado guardado → mostrar y limpiar ─────────
 if (!empty($_SESSION['pedido_resultado'])) {
     $pedido_creado = $_SESSION['pedido_resultado'];
-    unset($_SESSION['pedido_resultado']);
+    // Recuperar carrito original antes de que haya sido limpiado
+    $carrito_original = $_SESSION['carrito_snapshot'] ?? [];
+    unset($_SESSION['pedido_resultado'], $_SESSION['carrito_snapshot']);
 
 // ── Caso 2: Hay datos para procesar → crear pedido ────────────────
 } elseif (!empty($carrito) && !empty($datos)) {
@@ -51,11 +53,12 @@ if (!empty($_SESSION['pedido_resultado'])) {
     $resultado = crear_pedido($payload);
 
     if (!empty($resultado['success']) && !empty($resultado['numero_orden'])) {
-        // Limpiar carrito y checkout antes de redirigir
-        $_SESSION['pedido_resultado'] = $resultado;
-        $_SESSION['carrito'] = [];
+        // Guardar snapshot del carrito ANTES de limpiarlo
+        $_SESSION['carrito_snapshot']  = $carrito;
+        $_SESSION['pedido_resultado']  = $resultado;
+        $_SESSION['carrito']           = [];
         unset($_SESSION['checkout_datos']);
-        // PRG: redirigir para evitar reenvío y limpiar estado del navegador
+        // PRG: redirigir para evitar reenvío
         header('Location: order-confirm.php');
         exit;
     } else {
@@ -73,6 +76,99 @@ $metodos       = ['PAYPHONE' => 'Payphone', 'TRANSFERENCIA' => 'Transferencia ba
 $entregas      = ['RETIRO' => 'Retiro en tienda', 'SERVIENTREGA' => 'Envío Servientrega'];
 $metodo_label  = $metodos[$datos['metodo_pago'] ?? ''] ?? ($datos['metodo_pago'] ?? '');
 $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entrega'] ?? '');
+
+// ── Construir URL de WhatsApp con mensaje completo ──────────────────
+$_wa_nombre   = trim(($pedido_creado['nombres_comprador'] ?? $datos['nombres'] ?? '') . ' ' . ($datos['apellidos'] ?? ''));
+$_wa_orden    = $pedido_creado['numero_orden'] ?? '';
+$_wa_cedula   = $datos['cedula']   ?? '';
+$_wa_telefono = $datos['telefono'] ?? '';
+$_wa_entrega  = $entrega_label;
+$_wa_pago     = $metodo_label;
+
+// ── Construir líneas de productos y subtotal ───────────────────────
+$_wa_productos = '';
+$_wa_subtotal  = 0;
+
+// Fuente 1: carrito_original (snapshot guardado antes del PRG)
+$fuente_items = $carrito_original ?? [];
+
+// Fuente 2: carrito en sesión actual (si no hubo PRG, ej: error)
+if (empty($fuente_items) && !empty($carrito)) {
+    $fuente_items = $carrito;
+}
+
+// Fuente 3: items devueltos por la API en el resultado
+if (empty($fuente_items) && !empty($pedido_creado['items'])) {
+    foreach ($pedido_creado['items'] as $item) {
+        $qty    = $item['cantidad']        ?? 1;
+        $nombre = $item['nombre']          ?? $item['producto'] ?? $item['name'] ?? 'Producto';
+        $precio = $item['precio_unitario'] ?? $item['precio']   ?? 0;
+        $linea  = $qty * $precio;
+        $_wa_subtotal += $linea;
+        $_wa_productos .= "  \u{2022} {$qty}x {$nombre} \u{2014} $" . number_format($precio, 2) . "\n";
+    }
+    $fuente_items = []; // ya procesados arriba
+}
+
+// Procesar fuente 1 o 2 (formato carrito de sesión)
+if (!empty($fuente_items)) {
+    foreach (array_values($fuente_items) as $item) {
+        $qty    = $item['cantidad'] ?? 1;
+        $nombre = $item['nombre']   ?? $item['name']    ?? 'Producto';
+        $precio = $item['precio']   ?? $item['price']   ?? 0;
+        $linea  = $qty * $precio;
+        $_wa_subtotal += $linea;
+        $_wa_productos .= "  \u{2022} {$qty}x " . strtolower($nombre) . " \u{2014} $" . number_format($precio, 2) . "\n";
+    }
+}
+
+// Si no se pudieron obtener productos de ninguna fuente
+if (empty($_wa_productos)) {
+    $_wa_productos = "  \u{2022} Ver detalle en tienda\n";
+}
+
+$_wa_envio = number_format(($pedido_creado['costo_envio'] ?? $pedido_creado['envio'] ?? 0), 2);
+$_wa_total = number_format($pedido_creado['total'] ?? 0, 2);
+
+// Fecha del pedido
+$_wa_fecha_raw = $pedido_creado['fecha'] ?? $pedido_creado['created_at'] ?? $pedido_creado['fecha_creacion'] ?? null;
+if ($_wa_fecha_raw) {
+    $_wa_fecha = date('d/m/Y H:i', strtotime($_wa_fecha_raw));
+} else {
+    $_wa_fecha = date('d/m/Y H:i');
+}
+
+// ── Armar mensaje ──────────────────────────────────────────────────
+$_wa_msg  = " NUEVO PEDIDO #{$_wa_orden}\n";
+$_wa_msg .= " Cliente: {$_wa_nombre}\n";
+if ($_wa_cedula)   $_wa_msg .= " C\xC3\xA9dula: {$_wa_cedula}\n";
+if ($_wa_telefono) $_wa_msg .= " Tel\xC3\xA9fono: {$_wa_telefono}\n";
+$_wa_msg .= " Productos:\n";
+$_wa_msg .= $_wa_productos;
+$_wa_msg .= "Subtotal: $" . number_format($_wa_subtotal, 2) . "\n";
+$_wa_msg .= " Env\xC3\xADo: $" . $_wa_envio . "\n";
+$_wa_msg .= " TOTAL: $" . $_wa_total . "\n";
+$_wa_msg .= " Entrega: {$_wa_entrega}\n";
+$_wa_msg .= " Pago: {$_wa_pago}\n";
+
+if (!empty($datos['tipo_entrega']) && $datos['tipo_entrega'] === 'SERVIENTREGA') {
+    if (!empty($datos['ciudad']))    $_wa_msg .= "\xF0\x9F\x93\x8D Destino: " . $datos['ciudad'] . ", " . ($datos['provincia'] ?? '') . "\n";
+    if (!empty($datos['direccion'])) $_wa_msg .= "\xF0\x9F\x8F\xA0 Direcci\xC3\xB3n: " . $datos['direccion'] . "\n";
+    if (!empty($datos['referencia'])) $_wa_msg .= "\xF0\x9F\x93\x8C Referencia: " . $datos['referencia'] . "\n";
+}
+
+if (!empty($datos['metodo_pago']) && $datos['metodo_pago'] === 'TRANSFERENCIA') {
+    if (!empty($datos['banco_origen']))       $_wa_msg .= "\xF0\x9F\x8F\xA6 Banco: " . $datos['banco_origen'] . "\n";
+    if (!empty($datos['numero_comprobante'])) $_wa_msg .= "\xF0\x9F\xA7\xBE Comprobante: " . $datos['numero_comprobante'] . "\n";
+}
+
+if (!empty($datos['observaciones'])) {
+    $_wa_msg .= "\xF0\x9F\x93\x9D Observaciones: " . $datos['observaciones'] . "\n";
+}
+
+$_wa_msg .= "Pedido realizado el {$_wa_fecha}";
+
+$pedido_creado['whatsapp_url'] = 'https://wa.me/593996628440?text=' . rawurlencode($_wa_msg);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -83,6 +179,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="./includes/menu.css">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -156,7 +253,8 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
     .success-icon {
       width:64px; height:64px; border-radius:50%; flex-shrink:0;
       background:rgba(210,237,5,0.15); border:2px solid rgba(210,237,5,0.4);
-      display:flex; align-items:center; justify-content:center; font-size:1.8rem;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.8rem; color:var(--accent);
     }
     .success-text h2 {
       font-family:'Orbitron',sans-serif; font-size:1.1rem; font-weight:400;
@@ -178,7 +276,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
       border-radius:var(--radius); padding:24px 28px;
       display:flex; align-items:flex-start; gap:16px;
     }
-    .error-banner .error-icon { font-size:1.5rem; flex-shrink:0; margin-top:2px; }
+    .error-banner .error-icon { font-size:1.5rem; flex-shrink:0; margin-top:2px; color:var(--danger); }
     .error-banner h3 { font-family:'Orbitron',sans-serif; font-size:0.8rem; color:var(--danger); margin-bottom:6px; }
     .error-banner p { font-size:0.68rem; color:#ff9999; line-height:1.6; }
     .error-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
@@ -199,7 +297,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
       padding:14px 20px; border-bottom:1px solid var(--border);
       display:flex; align-items:center; gap:10px;
     }
-    .detail-header .dh-icon { font-size:1rem; }
+    .detail-header .dh-icon { font-size:1rem; color:var(--accent); }
     .detail-header h3 { font-family:'Orbitron',sans-serif; font-size:0.65rem; letter-spacing:.2em; color:#fff; }
     .detail-body { padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
     .detail-row {
@@ -233,7 +331,8 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
       border-radius:var(--radius); padding:24px 28px;
       display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
     }
-    .wa-text h3 { font-family:'Orbitron',sans-serif; font-size:0.85rem; color:#fff; letter-spacing:.08em; margin-bottom:6px; }
+    .wa-text h3 { font-family:'Orbitron',sans-serif; font-size:0.85rem; color:#fff; letter-spacing:.08em; margin-bottom:6px; display:flex; align-items:center; gap:10px; }
+    .wa-text h3 i { color:var(--whatsapp); font-size:1.1rem; }
     .wa-text p { font-size:0.68rem; color:var(--muted); line-height:1.6; max-width:460px; }
     .btn-whatsapp {
       display:inline-flex; align-items:center; gap:12px; padding:14px 28px;
@@ -243,7 +342,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
       transition:all .25s; white-space:nowrap; flex-shrink:0;
     }
     .btn-whatsapp:hover { background:var(--whatsapp2); transform:translateY(-3px); box-shadow:0 12px 36px rgba(37,211,102,.35); }
-    .btn-whatsapp svg { flex-shrink:0; }
+    .btn-whatsapp i { font-size:1.3rem; }
 
     .final-actions { display:flex; gap:12px; flex-wrap:wrap; }
     .btn-final {
@@ -299,9 +398,9 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
 </section>
 
 <div class="steps-bar">
-  <div class="step done"><div class="step-num">✓</div><span>CARRITO</span></div>
+  <div class="step done"><div class="step-num"><i class="bi bi-check-lg"></i></div><span>CARRITO</span></div>
   <div class="step-sep"></div>
-  <div class="step done"><div class="step-num">✓</div><span>DATOS</span></div>
+  <div class="step done"><div class="step-num"><i class="bi bi-check-lg"></i></div><span>DATOS</span></div>
   <div class="step-sep"></div>
   <div class="step active"><div class="step-num">3</div><span>CONFIRMACIÓN</span></div>
 </div>
@@ -310,20 +409,20 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
 
   <?php if ($error_pedido): ?>
   <div class="error-banner">
-    <div class="error-icon">⚠️</div>
+    <i class="bi bi-exclamation-triangle-fill error-icon"></i>
     <div>
       <h3>No se pudo procesar el pedido</h3>
       <p><?= htmlspecialchars(is_string($error_pedido) ? $error_pedido : 'Error al conectar con el servidor.') ?></p>
       <div class="error-actions">
-        <a href="checkout.php" class="btn-retry">← Volver al checkout</a>
-        <a href="cart.php" class="btn-retry">Ver carrito</a>
+        <a href="checkout.php" class="btn-retry"><i class="bi bi-arrow-left"></i> Volver al checkout</a>
+        <a href="cart.php" class="btn-retry"><i class="bi bi-cart3"></i> Ver carrito</a>
       </div>
     </div>
   </div>
 
   <?php else: ?>
   <div class="success-banner">
-    <div class="success-icon">✅</div>
+    <div class="success-icon"><i class="bi bi-check2-circle"></i></div>
     <div class="success-text">
       <h2>¡Tu pedido fue registrado exitosamente!</h2>
       <p>
@@ -340,7 +439,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
   <div class="details-grid">
     <div class="detail-card">
       <div class="detail-header">
-        <span class="dh-icon">📋</span>
+        <i class="bi bi-receipt dh-icon"></i>
         <h3>RESUMEN DEL PEDIDO</h3>
       </div>
       <div class="detail-body">
@@ -377,7 +476,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
 
     <div class="detail-card">
       <div class="detail-header">
-        <span class="dh-icon">👤</span>
+        <i class="bi bi-person-fill dh-icon"></i>
         <h3>DATOS DEL COMPRADOR</h3>
       </div>
       <div class="detail-body">
@@ -453,7 +552,7 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
 
   <div class="whatsapp-section">
     <div class="wa-text">
-      <h3>📱 Envía tu pedido ahora</h3>
+      <h3><i class="bi bi-whatsapp"></i> Envía tu pedido ahora</h3>
       <p>
         Tu pedido <strong style="color:#fff"><?= htmlspecialchars($pedido_creado['numero_orden']) ?></strong>
         está registrado. El siguiente paso es enviarlo por WhatsApp para que lo procesemos.
@@ -463,25 +562,21 @@ $entrega_label = $entregas[$datos['tipo_entrega'] ?? ''] ?? ($datos['tipo_entreg
     <?php if (!empty($pedido_creado['whatsapp_url'])): ?>
     <a href="<?= htmlspecialchars($pedido_creado['whatsapp_url']) ?>"
        target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
+      <i class="bi bi-whatsapp"></i>
       ENVIAR POR WHATSAPP
     </a>
     <?php else: ?>
-    <a href="https://wa.me/<?= WHATSAPP_TIENDA ?>?text=<?= urlencode('Hola, acabo de hacer un pedido en Vpmotos. N° de orden: ' . ($pedido_creado['numero_orden'] ?? '')) ?>"
+    <a href="https://wa.me/593996628440?text=<?= urlencode('Hola, acabo de hacer un pedido en Vpmotos. N° de orden: ' . ($pedido_creado['numero_orden'] ?? '')) ?>"
        target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
+      <i class="bi bi-whatsapp"></i>
       ENVIAR POR WHATSAPP
     </a>
     <?php endif; ?>
   </div>
 
   <div class="final-actions">
-    <a href="tienda.php" class="btn-final btn-tienda">🛒 Seguir comprando</a>
-    <a href="index.php" class="btn-final btn-inicio">Ir al inicio</a>
+    <a href="tienda.php" class="btn-final btn-tienda"><i class="bi bi-bag-check-fill"></i> Seguir comprando</a>
+    <a href="index.php" class="btn-final btn-inicio"><i class="bi bi-house-fill"></i> Ir al inicio</a>
   </div>
 
   <?php endif; ?>
