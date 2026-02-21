@@ -11,7 +11,6 @@ if (isset($productos['error'])) {
     $productos = [];
 }
 
-// Filtros
 $busqueda  = trim($_GET['q'] ?? '');
 $categoria = trim($_GET['categoria'] ?? '');
 $orden     = trim($_GET['orden'] ?? '');
@@ -38,7 +37,6 @@ usort($productos, function($a, $b) use ($orden) {
     };
 });
 
-// Categorías únicas
 $all_raw    = get_products();
 $categorias = [];
 if (!isset($all_raw['error'])) {
@@ -46,19 +44,115 @@ if (!isset($all_raw['error'])) {
     sort($categorias);
 }
 
-// Total carrito actual
 $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'));
+
+// ── SEO dinámico según filtros ──────────────────────────────────
+$seo_cat_map = [
+    'Repuestos'  => ['Repuestos Originales para Moto en Quito', 'Repuestos originales para motocicletas en Quito Ecuador. Honda, Yamaha, Bajaj, KTM, Kawasaki. Stock disponible.'],
+    'Accesorios' => ['Accesorios para Moto en Ecuador', 'Accesorios y equipamiento para motocicletas en Ecuador. Cascos, protecciones, luces y más en VP Motos Quito.'],
+    'Llantas'    => ['Llantas para Moto en Quito Ecuador', 'Llantas para todo tipo de moto en Quito. Mayor variedad de marcas y medidas. Envío a todo Ecuador.'],
+    'Aceites'    => ['Aceites y Lubricantes para Moto Ecuador', 'Aceites Motul, Castrol, Amsoil y más para motos en Ecuador. Cambio de aceite y lubricantes en VP Motos Quito.'],
+];
+
+if ($categoria && isset($seo_cat_map[$categoria])) {
+    [$page_title, $page_desc] = $seo_cat_map[$categoria];
+    $page_title = "VP Motos | " . $page_title;
+} elseif ($busqueda) {
+    $page_title = "Buscar \"" . htmlspecialchars($busqueda) . "\" — VP Motos Quito";
+    $page_desc  = "Resultados de búsqueda para \"" . htmlspecialchars($busqueda) . "\" en VP Motos. Repuestos, accesorios y más para motos en Quito, Ecuador.";
+} else {
+    $page_title = "Tienda VP Motos Quito | Repuestos, Accesorios, Llantas y Aceites para Moto Ecuador";
+    $page_desc  = "Compra online repuestos originales, accesorios, llantas y aceites para tu moto en Quito, Ecuador. Honda, Yamaha, Bajaj, KTM, Kawasaki, Suzuki. Envíos a todo Ecuador.";
+}
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-EC">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tienda — Vpmotos</title>
+
+  <!-- ═══ SEO ═══════════════════════════════════════════════════════ -->
+  <title><?= $page_title ?></title>
+  <meta name="description" content="<?= $page_desc ?>">
+  <meta name="keywords" content="repuestos motos Quito, accesorios motos Ecuador, llantas moto Ecuador, aceite moto Quito, comprar repuestos moto online Ecuador, tienda motos Quito, repuestos Honda Ecuador, repuestos Yamaha Ecuador, repuestos Bajaj Ecuador, repuestos KTM Quito<?= $categoria ? ', ' . htmlspecialchars($categoria) . ' moto Ecuador' : '' ?>">
+  <meta name="author" content="VP Motos">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://www.vpmotos.ec/tienda.php<?= $categoria ? '?categoria=' . urlencode($categoria) : '' ?>">
+  <meta name="geo.region" content="EC-P">
+  <meta name="geo.placename" content="Quito, Ecuador">
+
+  <!-- ═══ OPEN GRAPH ════════════════════════════════════════════════ -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.vpmotos.ec/tienda.php">
+  <meta property="og:title" content="<?= $page_title ?>">
+  <meta property="og:description" content="<?= $page_desc ?>">
+  <meta property="og:image" content="https://www.vpmotos.ec/images/logo_vp.png">
+  <meta property="og:locale" content="es_EC">
+  <meta property="og:site_name" content="VP Motos">
+
+  <!-- ═══ TWITTER CARD ═════════════════════════════════════════════ -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="<?= $page_title ?>">
+  <meta name="twitter:description" content="<?= $page_desc ?>">
+  <meta name="twitter:image" content="https://www.vpmotos.ec/images/logo_vp.png">
+
+  <!-- ═══ FAVICON ═══════════════════════════════════════════════════ -->
+  <link rel="icon" type="image/png" href="./images/logo_vp.png">
+  <link rel="apple-touch-icon" href="./images/logo_vp.png">
+  <meta name="theme-color" content="#D2ED05">
+
+  <!-- ═══ SCHEMA.ORG — ItemList de productos ═══════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "<?= $categoria ?: 'Repuestos y Accesorios para Motos' ?> — VP Motos Quito",
+    "description": "<?= $page_desc ?>",
+    "url": "https://www.vpmotos.ec/tienda.php",
+    "numberOfItems": <?= count($productos) ?>,
+    "itemListElement": <?= json_encode(
+      array_map(fn($p, $i) => [
+        '@type'    => 'ListItem',
+        'position' => $i + 1,
+        'item'     => [
+          '@type'       => 'Product',
+          'name'        => $p['nombre'],
+          'description' => $p['descripcion'] ?? '',
+          'brand'       => ['@type' => 'Brand', 'name' => $p['marca'] ?? 'VP Motos'],
+          'offers'      => [
+            '@type'         => 'Offer',
+            'price'         => number_format($p['precio'], 2, '.', ''),
+            'priceCurrency' => 'USD',
+            'availability'  => ($p['stock'] > 0)
+                               ? 'https://schema.org/InStock'
+                               : 'https://schema.org/OutOfStock',
+            'seller'        => ['@type' => 'Organization', 'name' => 'VP Motos'],
+          ],
+        ],
+      ], array_slice($productos, 0, 10), range(0, 9))
+    ) ?>
+  }
+  </script>
+
+  <!-- ═══ BREADCRUMB Schema ════════════════════════════════════════ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://www.vpmotos.ec/" },
+      { "@type": "ListItem", "position": 2, "name": "Tienda", "item": "https://www.vpmotos.ec/tienda.php" }
+      <?= $categoria ? ', { "@type": "ListItem", "position": 3, "name": "' . htmlspecialchars($categoria) . '", "item": "https://www.vpmotos.ec/tienda.php?categoria=' . urlencode($categoria) . '" }' : '' ?>
+    ]
+  }
+  </script>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./includes/menu.css">
+
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -70,8 +164,8 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 
     /* ══ HERO ══ */
     .shop-hero {
-      position:relative; width:100%; height:320px; overflow:hidden;
-      display:flex; align-items:flex-end; justify-content:flex-start; padding:40px 60px;
+      position:relative; width:100%; min-height:360px; overflow:hidden;
+      display:flex; align-items:flex-end; justify-content:flex-start; padding:50px 60px;
     }
     .shop-hero::before {
       content:''; position:absolute; inset:0; z-index:1;
@@ -89,13 +183,33 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
       background-size:60px 60px;
     }
     .shop-hero-content { position:relative; z-index:2; }
+    .hero-breadcrumb {
+      font-size:0.6rem; letter-spacing:0.2em; color:rgba(255,255,255,0.35);
+      margin-bottom:16px; display:flex; align-items:center; gap:8px;
+    }
+    .hero-breadcrumb a { color:var(--accent); text-decoration:none; transition:opacity .2s; }
+    .hero-breadcrumb a:hover { opacity:.7; }
     .shop-hero-content h1 {
-      font-family:'Orbitron',sans-serif; font-size:clamp(2rem,5vw,4rem);
+      font-family:'Orbitron',sans-serif; font-size:clamp(2rem,5vw,3.8rem);
       font-weight:400; letter-spacing:0.2em; text-transform:uppercase; color:#fff; line-height:1;
     }
     .shop-hero-content h1 span { color:var(--accent); }
-    .shop-hero-content p { margin-top:12px; color:var(--muted); font-size:0.75rem; letter-spacing:0.15em; }
+    .shop-hero-content p { margin-top:14px; color:var(--muted); font-size:0.72rem; letter-spacing:0.12em; line-height:1.7; max-width:500px; }
     .hero-line { width:60px; height:2px; background:var(--accent); margin-bottom:20px; }
+
+    /* ── SEO TEXT EN HERO — visible para Google ───────────────── */
+    .hero-seo-tags {
+      display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;
+    }
+    .hero-seo-tag {
+      font-size:0.55rem; letter-spacing:0.12em; padding:4px 12px;
+      border:1px solid rgba(210,237,5,0.2); border-radius:20px;
+      color:rgba(255,255,255,0.3); background:rgba(210,237,5,0.04);
+      text-decoration:none; transition:all .2s;
+    }
+    .hero-seo-tag:hover {
+      border-color:rgba(210,237,5,0.5); color:var(--accent); background:rgba(210,237,5,0.08);
+    }
 
     /* ══ CART FLOAT BUTTON ══ */
     .cart-float {
@@ -115,7 +229,7 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     }
     .cart-float[data-count="0"] { display:none; }
 
-    /* ══ TOAST NOTIFICACIÓN ══ */
+    /* ══ TOAST ══ */
     .toast {
       position:fixed; bottom:100px; right:28px; z-index:600;
       background:var(--surface); border:1px solid rgba(210,237,5,0.3);
@@ -187,6 +301,21 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     .stat-box .num { font-family:'Orbitron',sans-serif; font-size:2rem; color:var(--accent); line-height:1; }
     .stat-box .lbl { font-size:0.6rem; color:var(--muted); letter-spacing:0.15em; margin-top:6px; }
 
+    /* Bloque SEO en sidebar */
+    .sidebar-seo-block {
+      background: rgba(210,237,5,0.04);
+      border: 1px solid rgba(210,237,5,0.1);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .sidebar-seo-block p {
+      font-size: 0.58rem;
+      color: rgba(255,255,255,0.2);
+      line-height: 1.8;
+      letter-spacing: 0.04em;
+    }
+    .sidebar-seo-block strong { color: rgba(210,237,5,0.3); }
+
     /* ══ MAIN ══ */
     .shop-main { padding:32px 40px; }
     .shop-topbar {
@@ -257,7 +386,6 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     .card-stock { font-size:0.6rem; color:var(--muted); text-align:right; }
     .card-stock strong { color:var(--text); }
 
-    /* BOTÓN AGREGAR EN TARJETA */
     .btn-add-card {
       position:absolute; bottom:0; left:0; right:0;
       background:rgba(210,237,5,0.9); color:#000;
@@ -268,9 +396,7 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     }
     .product-card:hover .btn-add-card { transform:translateY(0); }
     .btn-add-card:active { background:var(--accent2); }
-    .btn-add-card.agotado {
-      background:rgba(255,68,68,0.7); color:#fff; cursor:not-allowed;
-    }
+    .btn-add-card.agotado { background:rgba(255,68,68,0.7); color:#fff; cursor:not-allowed; }
 
     /* ══ EMPTY / ERROR ══ */
     .empty-state {
@@ -348,7 +474,6 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 
     .modal-desc { font-size:0.68rem; color:var(--muted); line-height:1.8; padding:13px; background:var(--surface2); border-radius:8px; border-left:3px solid var(--accent); margin-bottom:18px; }
 
-    /* CONTROLES CANTIDAD + AGREGAR EN MODAL */
     .modal-cart-section { margin-top:auto; padding-top:16px; border-top:1px solid var(--border); }
     .modal-qty-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
     .modal-qty-label { font-size:0.6rem; color:var(--muted); letter-spacing:.1em; white-space:nowrap; }
@@ -377,15 +502,12 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     .btn-ver-carrito:hover { background:rgba(210,237,5,0.08); }
 
     /* ══ RESPONSIVE ══ */
-    @media(max-width:1024px) {
-      .shop-hero { padding:36px 36px; }
-      .shop-main { padding:24px; }
-    }
+    @media(max-width:1024px) { .shop-hero { padding:36px 36px; } .shop-main { padding:24px; } }
     @media(max-width:900px) {
       .shop-layout { grid-template-columns:1fr; }
       .sidebar { position:static; height:auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px; }
       .shop-main { padding:20px; }
-      .shop-hero { padding:30px 20px; height:220px; }
+      .shop-hero { padding:30px 20px; min-height:240px; }
       .modal-body { grid-template-columns:1fr; }
       .modal-gallery { border-right:none; border-bottom:1px solid var(--border); }
       .cart-float { bottom:20px; right:20px; }
@@ -393,11 +515,11 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     @media(max-width:600px) {
       .sidebar { grid-template-columns:1fr; }
       .products-grid { grid-template-columns:1fr 1fr; gap:12px; }
-      .shop-hero { height:180px; }
       .modal { max-width:100%; border-radius:12px 12px 0 0; }
       .modal-overlay { align-items:flex-end; padding:0; }
       .cart-float span { display:none; }
       .cart-float { padding:14px 16px; border-radius:50%; }
+      .hero-seo-tags { display:none; }
     }
   </style>
 </head>
@@ -405,20 +527,55 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 
 <?php include './includes/menu.php'; ?>
 
-<!-- HERO -->
-<section class="shop-hero">
+<!-- ══ HERO SEO-OPTIMIZADO ══ -->
+<header class="shop-hero" role="banner">
   <div class="shop-hero-bg"></div>
   <div class="shop-hero-content">
+    <nav class="hero-breadcrumb" aria-label="Ruta de navegación">
+      <a href="index.php">Inicio</a>
+      <span>›</span>
+      <span>Tienda</span>
+      <?php if ($categoria): ?>
+        <span>›</span>
+        <span><?= htmlspecialchars($categoria) ?></span>
+      <?php endif; ?>
+    </nav>
     <div class="hero-line"></div>
-    <h1>Nuestra <span>Tienda</span></h1>
-    <p>Repuestos y accesorios para tu moto — calidad garantizada</p>
+    <h1>
+      <?php if ($categoria): ?>
+        <span><?= htmlspecialchars($categoria) ?></span> para Moto
+      <?php else: ?>
+        Tienda <span>Online</span>
+      <?php endif; ?>
+    </h1>
+    <p>
+      <?php if ($categoria === 'Repuestos'): ?>
+        Repuestos originales para Honda, Yamaha, Bajaj, KTM, Kawasaki y más en Quito, Ecuador.
+      <?php elseif ($categoria === 'Llantas'): ?>
+        Llantas para moto en Quito. Todas las medidas y marcas con envío a todo Ecuador.
+      <?php elseif ($categoria === 'Aceites'): ?>
+        Aceites y lubricantes para moto en Ecuador. Motul, Castrol, Amsoil y más marcas certificadas.
+      <?php elseif ($categoria === 'Accesorios'): ?>
+        Accesorios y equipamiento para motocicletas en Quito. Calidad garantizada.
+      <?php else: ?>
+        Repuestos originales · Accesorios · Llantas · Aceites — Envíos a todo Ecuador
+      <?php endif; ?>
+    </p>
+    <!-- Tags SEO clickeables — texto real indexable por Google -->
+    <div class="hero-seo-tags" role="navigation" aria-label="Categorías">
+      <a href="tienda.php?categoria=Repuestos" class="hero-seo-tag">Repuestos originales Quito</a>
+      <a href="tienda.php?categoria=Accesorios" class="hero-seo-tag">Accesorios moto Ecuador</a>
+      <a href="tienda.php?categoria=Llantas" class="hero-seo-tag">Llantas moto Quito</a>
+      <a href="tienda.php?categoria=Aceites" class="hero-seo-tag">Aceites lubricantes Ecuador</a>
+    </div>
   </div>
-</section>
+</header>
 
 <!-- BOTÓN FLOTANTE CARRITO -->
 <a href="cart.php" class="cart-float" id="cart-float"
-   data-count="<?= $carrito_count ?>">
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+   data-count="<?= $carrito_count ?>"
+   aria-label="Ver carrito de compras">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
     <line x1="3" y1="6" x2="21" y2="6"/>
     <path d="M16 10a4 4 0 0 1-8 0"/>
@@ -427,12 +584,12 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
   <div class="cart-float-badge" id="cart-badge"><?= $carrito_count ?></div>
 </a>
 
-<!-- TOAST FEEDBACK -->
-<div class="toast" id="toast">
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite">
   <div class="toast-icon" id="toast-icon">✓</div>
   <div class="toast-txt">
     <strong id="toast-title">Producto agregado</strong>
-    <span id="toast-sub">Ver carrito →</span>
+    <span id="toast-sub">Agregado al carrito ✓</span>
   </div>
 </div>
 
@@ -440,33 +597,37 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 <div class="shop-layout">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" aria-label="Filtros de productos">
     <form method="GET" action="" id="filter-form">
 
       <div class="sidebar-section">
         <div class="sidebar-label">Buscar</div>
         <div class="search-wrap">
-          <span class="search-icon">⌕</span>
-          <input type="text" name="q" placeholder="Nombre o código..."
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input type="text" name="q"
+            placeholder="Nombre o código..."
             value="<?= htmlspecialchars($busqueda) ?>"
+            aria-label="Buscar productos"
             oninput="document.getElementById('filter-form').submit()">
         </div>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-label">Categorías</div>
-        <ul class="cat-list">
+        <ul class="cat-list" role="list">
           <li>
             <a href="?<?= http_build_query(array_merge($_GET,['categoria'=>''])) ?>"
-               class="<?= !$categoria ? 'active' : '' ?>">
-              <span class="cat-dot"></span>Todos los productos
+               class="<?= !$categoria ? 'active' : '' ?>"
+               aria-current="<?= !$categoria ? 'page' : 'false' ?>">
+              <span class="cat-dot" aria-hidden="true"></span>Todos los productos
             </a>
           </li>
           <?php foreach ($categorias as $cat): ?>
           <li>
             <a href="?<?= http_build_query(array_merge($_GET,['categoria'=>$cat])) ?>"
-               class="<?= $categoria===$cat ? 'active' : '' ?>">
-              <span class="cat-dot"></span><?= htmlspecialchars($cat) ?>
+               class="<?= $categoria===$cat ? 'active' : '' ?>"
+               aria-current="<?= $categoria===$cat ? 'page' : 'false' ?>">
+              <span class="cat-dot" aria-hidden="true"></span><?= htmlspecialchars($cat) ?>
             </a>
           </li>
           <?php endforeach; ?>
@@ -475,28 +636,37 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 
       <div class="sidebar-section">
         <div class="sidebar-label">Ordenar por</div>
-        <select class="order-select" name="orden" onchange="this.form.submit()">
+        <select class="order-select" name="orden" onchange="this.form.submit()" aria-label="Ordenar productos">
           <option value="" <?= !$orden?'selected':'' ?>>Relevancia</option>
           <option value="precio_asc"  <?= $orden==='precio_asc' ?'selected':'' ?>>Precio: menor a mayor</option>
           <option value="precio_desc" <?= $orden==='precio_desc'?'selected':'' ?>>Precio: mayor a menor</option>
           <option value="nombre_asc"  <?= $orden==='nombre_asc' ?'selected':'' ?>>Nombre A–Z</option>
         </select>
       </div>
-
     </form>
 
     <div class="sidebar-section">
       <div class="sidebar-label">Total</div>
       <div class="stat-box">
         <div class="num"><?= count($productos) ?></div>
-        <div class="lbl">Productos disponibles</div>
+        <div class="lbl">Productos<?= $categoria ? ' en ' . htmlspecialchars($categoria) : ' disponibles' ?></div>
+      </div>
+    </div>
+
+    <!-- Bloque SEO en sidebar — Google lo indexa como contenido relevante -->
+    <div class="sidebar-section">
+      <div class="sidebar-seo-block">
+        <p>
+          <strong>VP Motos Quito</strong> — Repuestos originales y accesorios para
+          <strong>Honda, Yamaha, Bajaj, KTM, Kawasaki</strong> y más marcas.
+          Envíos a todo Ecuador. Precios en USD con IVA incluido.
+        </p>
       </div>
     </div>
   </aside>
 
   <!-- MAIN -->
-  <main class="shop-main">
-
+  <main class="shop-main" role="main">
     <div class="shop-topbar">
       <div class="results-info">
         <strong><?= count($productos) ?></strong> resultado<?= count($productos)!==1?'s':'' ?>
@@ -518,9 +688,9 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
     </div>
 
     <!-- GRID -->
-    <div class="products-grid">
+    <div class="products-grid" role="list" aria-label="Productos VP Motos">
       <?php if ($error): ?>
-        <div class="api-error">
+        <div class="api-error" role="alert">
           <span style="font-size:1.5rem">⚠️</span>
           <div>
             <strong>Error al conectar con el inventario:</strong><br>
@@ -543,19 +713,21 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
         <?php foreach ($productos as $p):
           $en_stock = (int)$p['stock'] > 0;
         ?>
-        <div class="product-card"
-             onclick="abrirModal(<?= htmlspecialchars(json_encode($p), ENT_QUOTES) ?>)">
+        <article class="product-card" role="listitem"
+             onclick="abrirModal(<?= htmlspecialchars(json_encode($p), ENT_QUOTES) ?>)"
+             aria-label="<?= htmlspecialchars($p['nombre']) ?> — $<?= number_format($p['precio'],2) ?> USD">
 
-          <span class="stock-badge <?= $en_stock?'in':'out' ?>">
+          <span class="stock-badge <?= $en_stock?'in':'out' ?>" aria-label="<?= $en_stock?'En stock':'Agotado' ?>">
             <?= $en_stock?'EN STOCK':'AGOTADO' ?>
           </span>
 
           <div class="card-img">
             <?php if ($p['imagen_url'] ?? null): ?>
               <img src="<?= htmlspecialchars($p['imagen_url']) ?>"
-                   alt="<?= htmlspecialchars($p['nombre']) ?>" loading="lazy">
+                   alt="<?= htmlspecialchars($p['nombre']) ?> — Repuesto moto <?= htmlspecialchars($p['marca'] ?? '') ?> Quito Ecuador"
+                   loading="lazy" width="300" height="200">
             <?php else: ?>
-              <div class="no-img">
+              <div class="no-img" aria-hidden="true">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
                   <rect x="3" y="3" width="18" height="18" rx="2"/>
                   <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -564,7 +736,7 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
                 <span>SIN IMAGEN</span>
               </div>
             <?php endif; ?>
-            <div class="card-img-overlay">
+            <div class="card-img-overlay" aria-hidden="true">
               <span class="overlay-codigo"><?= htmlspecialchars($p['codigo']) ?></span>
             </div>
           </div>
@@ -573,7 +745,7 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
             <?php if ($p['categoria']): ?>
               <div class="card-categoria"><?= htmlspecialchars($p['categoria']) ?></div>
             <?php endif; ?>
-            <div class="card-nombre"><?= htmlspecialchars($p['nombre']) ?></div>
+            <h2 class="card-nombre"><?= htmlspecialchars($p['nombre']) ?></h2>
             <?php if ($p['marca']): ?>
               <div class="card-marca"><?= htmlspecialchars($p['marca']) ?></div>
             <?php endif; ?>
@@ -588,9 +760,9 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
             </div>
           </div>
 
-          <!-- Botón rápido (aparece al hacer hover en la card) -->
           <?php if ($en_stock): ?>
           <button class="btn-add-card"
+            aria-label="Agregar <?= htmlspecialchars($p['nombre']) ?> al carrito"
             onclick="event.stopPropagation(); addToCart(
               <?= $p['id'] ?>,
               <?= htmlspecialchars(json_encode($p['nombre']), ENT_QUOTES) ?>,
@@ -599,7 +771,7 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
               <?= htmlspecialchars(json_encode($p['codigo']), ENT_QUOTES) ?>,
               1
             )">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
               <path d="M16 10a4 4 0 0 1-8 0"/>
@@ -607,25 +779,25 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
             AGREGAR
           </button>
           <?php else: ?>
-          <button class="btn-add-card agotado" onclick="event.stopPropagation()">
+          <button class="btn-add-card agotado" disabled aria-disabled="true" onclick="event.stopPropagation()">
             AGOTADO
           </button>
           <?php endif; ?>
 
-        </div>
+        </article>
         <?php endforeach; ?>
       <?php endif; ?>
     </div>
-
   </main>
 </div>
 
 <!-- MODAL DETALLE -->
-<div class="modal-overlay" id="modal" onclick="cerrarModalClick(event)">
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo"
+     onclick="cerrarModalClick(event)">
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title" id="modal-titulo">Detalle del producto</span>
-      <button class="modal-close" onclick="cerrarModal()">&times;</button>
+      <button class="modal-close" onclick="cerrarModal()" aria-label="Cerrar">&times;</button>
     </div>
     <div class="modal-body">
       <div class="modal-gallery">
@@ -640,34 +812,29 @@ $carrito_count = array_sum(array_column($_SESSION['carrito'] ?? [], 'cantidad'))
 <?php include './includes/footer.php'; ?>
 
 <script>
-// ── Estado del producto actual en modal ──────────────────────────
 let _modalProducto = null;
 
-// ── Abrir modal ──────────────────────────────────────────────────
 function abrirModal(p) {
   _modalProducto = p;
   const overlay = document.getElementById('modal');
-
   document.getElementById('modal-titulo').textContent = p.nombre;
 
-  // Imágenes
   const imgs = [p.imagen_url, p.imagen_2_url, p.imagen_3_url].filter(Boolean);
-  const imgWrap    = document.getElementById('modal-img-wrap');
+  const imgWrap = document.getElementById('modal-img-wrap');
   const thumbsWrap = document.getElementById('modal-thumbs');
 
   if (imgs.length > 0) {
-    imgWrap.innerHTML = `<img class="modal-img-main" id="modal-main-img" src="${imgs[0]}" alt="${escHTML(p.nombre)}">`;
+    imgWrap.innerHTML = `<img class="modal-img-main" id="modal-main-img" src="${imgs[0]}" alt="${escHTML(p.nombre)} — VP Motos Quito Ecuador">`;
     thumbsWrap.innerHTML = imgs.map((src, i) =>
-      `<img class="modal-thumb ${i===0?'active':''}" src="${src}" onclick="cambiarImg(this,'${src}')">`
+      `<img class="modal-thumb ${i===0?'active':''}" src="${src}" alt="${escHTML(p.nombre)}" onclick="cambiarImg(this,'${src}')">`
     ).join('');
   } else {
     imgWrap.innerHTML = `<div class="modal-img-main no-img-modal">SIN IMAGEN</div>`;
     thumbsWrap.innerHTML = '';
   }
 
-  // Info
   const stockColor = p.stock > 0 ? 'var(--accent)' : 'var(--danger)';
-  const enStock    = p.stock > 0;
+  const enStock = p.stock > 0;
 
   document.getElementById('modal-info').innerHTML = `
     ${p.categoria ? `<div class="modal-categoria">${escHTML(p.categoria)}</div>` : ''}
@@ -691,15 +858,14 @@ function abrirModal(p) {
       <div class="modal-qty-row">
         <span class="modal-qty-label">CANTIDAD</span>
         <div class="qty-control">
-          <button class="qty-btn-m" type="button" onclick="adjModalQty(-1)">−</button>
-          <input class="qty-val" id="modal-qty" type="number" value="1" min="1" max="${p.stock}">
-          <button class="qty-btn-m" type="button" onclick="adjModalQty(1)">+</button>
+          <button class="qty-btn-m" type="button" onclick="adjModalQty(-1)" aria-label="Reducir cantidad">−</button>
+          <input class="qty-val" id="modal-qty" type="number" value="1" min="1" max="${p.stock}" aria-label="Cantidad">
+          <button class="qty-btn-m" type="button" onclick="adjModalQty(1)" aria-label="Aumentar cantidad">+</button>
         </div>
         <span style="font-size:0.6rem;color:var(--muted)">Máx. ${p.stock}</span>
       </div>
-      <button class="btn-add-modal" id="btn-add-modal"
-        onclick="addFromModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <button class="btn-add-modal" id="btn-add-modal" onclick="addFromModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
           <line x1="3" y1="6" x2="21" y2="6"/>
           <path d="M16 10a4 4 0 0 1-8 0"/>
@@ -707,10 +873,10 @@ function abrirModal(p) {
         AGREGAR AL CARRITO
       </button>
       ` : `
-      <button class="btn-add-modal" disabled>PRODUCTO AGOTADO</button>
+      <button class="btn-add-modal" disabled aria-disabled="true">PRODUCTO AGOTADO</button>
       `}
-      <a href="cart.php" class="btn-ver-carrito">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <a href="cart.php" class="btn-ver-carrito" aria-label="Ver carrito">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
           <line x1="3" y1="6" x2="21" y2="6"/>
           <path d="M16 10a4 4 0 0 1-8 0"/>
@@ -749,71 +915,53 @@ function adjModalQty(d) {
 function addFromModal() {
   if (!_modalProducto) return;
   const qty = parseInt(document.getElementById('modal-qty')?.value || 1);
-  addToCart(
-    _modalProducto.id,
-    _modalProducto.nombre,
-    _modalProducto.precio,
-    _modalProducto.imagen_url || '',
-    _modalProducto.codigo,
-    qty
-  );
+  addToCart(_modalProducto.id, _modalProducto.nombre, _modalProducto.precio,
+    _modalProducto.imagen_url || '', _modalProducto.codigo, qty);
 }
 
-// ── Agregar al carrito via fetch ─────────────────────────────────
 function addToCart(id, nombre, precio, imagen, codigo, cantidad) {
   const body = new URLSearchParams({
-    action: 'agregar', producto_id: id, nombre, precio, imagen, codigo, cantidad, ajax: 1
+    action:'agregar', producto_id:id, nombre, precio, imagen, codigo, cantidad, ajax:1
   });
-
   fetch('cart.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body })
     .then(r => r.json())
     .then(data => {
       if (data.success) {
         updateCartUI(data.total_items);
         showToast(nombre, cantidad);
-        // Actualizar contador en modal si está abierto
         const mc = document.getElementById('modal-cart-count');
         if (mc) mc.textContent = data.total_items;
+        if (typeof actualizarBadgeNav === 'function') actualizarBadgeNav(data.total_items);
       }
     })
     .catch(() => { window.location = 'cart.php'; });
 }
 
-// ── UI del carrito flotante ───────────────────────────────────────
 function updateCartUI(n) {
   const badge = document.getElementById('cart-badge');
   const float = document.getElementById('cart-float');
   if (badge) badge.textContent = n;
-  if (float) {
-    float.dataset.count = n;
-    float.style.display = n > 0 ? 'flex' : 'none';
-  }
+  if (float) { float.dataset.count = n; float.style.display = n > 0 ? 'flex' : 'none'; }
 }
 
-// ── Toast notificación ────────────────────────────────────────────
 let toastTimer;
 function showToast(nombre, cantidad) {
   const t = document.getElementById('toast');
-  document.getElementById('toast-title').textContent = `${cantidad}× ${nombre.substring(0, 30)}${nombre.length > 30 ? '…' : ''}`;
-  document.getElementById('toast-sub').textContent   = 'Agregado al carrito ✓';
+  document.getElementById('toast-title').textContent = `${cantidad}× ${nombre.substring(0,30)}${nombre.length>30?'…':''}`;
+  document.getElementById('toast-sub').textContent = 'Agregado al carrito ✓';
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-// ── Esc para cerrar modal ─────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') cerrarModal();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
 
-// ── Inicializar visibilidad del botón flotante ────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const count = parseInt(document.getElementById('cart-badge')?.textContent || 0);
   const float = document.getElementById('cart-float');
   if (float) float.style.display = count > 0 ? 'flex' : 'none';
 });
 
-// ── Helper escape HTML ─────────────────────────────────────────────
 function escHTML(s) {
   const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
 }
