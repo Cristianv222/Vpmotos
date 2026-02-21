@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: vpmotos_app
+    restart: unless-stopped
+    # Sin ports: NPM accede por red interna
+    env_file:
+      - .env.prod
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/apache2
+      - /var/lock/apache2
+    volumes:
+      - images_volume:/var/www/html/images
+      - uploads_volume:/var/www/html/uploads
+    depends_on:
+      - db
+    networks:
+      - vpmotos_net
+      - proxy-network
+      - vpmotos_shared_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.40'
+          memory: 384M
+
+  db:
+    image: mariadb:10.6
+    container_name: vpmotos_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - vpmotos_net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+
+networks:
+  vpmotos_net:
+    driver: bridge
+  proxy-network:
+    external: true
+  vpmotos_shared_network:
+    external: true
+
+volumes:
+  db_data:
+  images_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/apps/Vpmotos/images
+  uploads_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/apps/Vpmotos/uploads
