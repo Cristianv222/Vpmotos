@@ -1,58 +1,35 @@
-/* Contenedor principal del carrusel */
-.carrusel-container {
+/* Hero Section */
+.hero-section {
   position: relative;
   width: 100%;
-  height: 100vh; /* Hacer que el carrusel ocupe toda la altura de la ventana */
+  height: 100vh;
   overflow: hidden;
-}
-
-/* Estilo del carrusel */
-.carrusel {
-  display: flex;
-  transition: transform 0.5s ease-in-out;
-  width: 100%;
-}
-
-/* Estilo de cada slide */
-.slide {
-  min-width: 100%;
-  height: 100%; /* Aseguramos que las imágenes y videos ocupen todo el alto del contenedor */
-  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
 }
-/* Estilo de las imágenes y videos */
-.slide img, .slide video {
-  width: 100%;
-  height: 100%; /* Ocupa toda la altura del contenedor */
-  object-fit: cover; /* Asegura que la imagen/video cubra toda el área sin deformarse */
-}
 
-/* Botones de navegación */
-.prev, .next {
+.hero-video {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: none;
-  padding: 15px;
-  cursor: pointer;
-  font-size: 18px;
-  z-index: 10;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  object-fit: cover;
 }
 
-.prev {
-  left: 10px;
-}
-
-.next {
-  right: 10px;
-}
-
-.prev:hover, .next:hover {
-  background-color: rgba(0, 0, 0, 0.8);
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3); /* Slight overlay for better visibility if needed */
+  z-index: 0;
 }
 
 /* Estilos generales para la sección de servicios */

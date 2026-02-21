@@ -1,0 +1,24 @@
+{
+    "hora": "2026-02-20 18:37:13",
+    "session": {
+        "carrito": "1 items",
+        "checkout_datos": [
+            "nombres",
+            "apellidos",
+            "cedula",
+            "telefono",
+            "email",
+            "tipo_entrega",
+            "direccion",
+            "ciudad",
+            "provincia",
+            "referencia",
+            "metodo_pago",
+            "observaciones",
+            "numero_comprobante",
+            "banco_origen",
+            "comprobante_base64"
+        ],
+        "pedido_result": "existe"
+    }
+}

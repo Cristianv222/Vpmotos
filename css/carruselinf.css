@@ -1,101 +1,83 @@
+/* Infinite Carousel Wrapper */
 .infinite-wrapper {
-    perspective: 1000px;
-    width: 100%;
-    height: 100vh;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
+  position: absolute;
+  bottom: 0px;
+  /* Position at the bottom of the hero */
+  left: 0;
+  width: 100%;
+  height: 180px;
+  /* Adjust height as needed */
+  overflow: hidden;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  /* Background gradient for better visibility */
+  display: flex;
+  align-items: center;
+}
+
+/* The scrolling track */
+.infinite-carousel {
+  display: flex;
+  width: max-content;
+  /* Allow content to overflow horizontally */
+  animation: scroll 40s linear infinite;
+}
+
+/* Individual items */
+.infinite-item {
+  position: relative;
+  /* Reset position from absolute */
+  width: 250px;
+  height: 150px;
+  margin: 0 15px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+
+  /* Grayscale Effect */
+  filter: grayscale(100%);
+  transition: filter 0.3s ease, transform 0.3s ease;
+  transform: none;
+  /* Reset 3D transforms */
+}
+
+/* Hover Effects */
+.infinite-item:hover {
+  filter: grayscale(0%);
+  transform: scale(1.05);
+  /* Slight zoom on hover */
+  z-index: 20;
+}
+
+/* Pause animation on hover */
+.infinite-carousel:hover {
+  animation-play-state: paused;
+}
+
+/* Keyframes for sliding */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
   }
-  
-  .infinite-carousel {
-    position: relative;
-    transform-style: preserve-3d;
-    animation: infinite-spin 30s infinite linear;
+
+  100% {
+    transform: translateX(-50%);
+    /* Move by 50% since we duplicated the items */
   }
-  
+}
+
+/* Reset Media Queries/Old Styles */
+/* We don't need complex media queries for this simple linear layout, 
+   but we can adjust item size for mobile if desired */
+@media (max-width: 768px) {
   .infinite-item {
-    position: absolute;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: clamp(16px, 3vw, 24px);
-    transition: transform 0.5s;
-    backface-visibility: hidden;
+    width: 180px;
+    height: 120px;
   }
-  
-  @media (min-width: 1024px) {
-    .infinite-item {
-      width: 300px;
-      height: 200px;
-    }
-    .infinite-carousel {
-      width: 300px;
-      height: 200px;
-    }
-    .infinite-item:nth-child(1) { transform: rotateY(0deg) translateZ(500px); }
-    .infinite-item:nth-child(2) { transform: rotateY(36deg) translateZ(500px); }
-    .infinite-item:nth-child(3) { transform: rotateY(72deg) translateZ(500px); }
-    .infinite-item:nth-child(4) { transform: rotateY(108deg) translateZ(500px); }
-    .infinite-item:nth-child(5) { transform: rotateY(144deg) translateZ(500px); }
-    .infinite-item:nth-child(6) { transform: rotateY(180deg) translateZ(500px); }
-    .infinite-item:nth-child(7) { transform: rotateY(216deg) translateZ(500px); }
-    .infinite-item:nth-child(8) { transform: rotateY(252deg) translateZ(500px); }
-    .infinite-item:nth-child(9) { transform: rotateY(288deg) translateZ(500px); }
-    .infinite-item:nth-child(10) { transform: rotateY(324deg) translateZ(500px); }
+
+  .infinite-wrapper {
+    height: 140px;
   }
-  
-  @media (min-width: 768px) and (max-width: 1023px) {
-    .infinite-item {
-      width: 250px;
-      height: 167px;
-    }
-    .infinite-carousel {
-      width: 250px;
-      height: 167px;
-    }
-    .infinite-item:nth-child(1) { transform: rotateY(0deg) translateZ(400px); }
-    .infinite-item:nth-child(2) { transform: rotateY(36deg) translateZ(400px); }
-    .infinite-item:nth-child(3) { transform: rotateY(72deg) translateZ(400px); }
-    .infinite-item:nth-child(4) { transform: rotateY(108deg) translateZ(400px); }
-    .infinite-item:nth-child(5) { transform: rotateY(144deg) translateZ(400px); }
-    .infinite-item:nth-child(6) { transform: rotateY(180deg) translateZ(400px); }
-    .infinite-item:nth-child(7) { transform: rotateY(216deg) translateZ(400px); }
-    .infinite-item:nth-child(8) { transform: rotateY(252deg) translateZ(400px); }
-    .infinite-item:nth-child(9) { transform: rotateY(288deg) translateZ(400px); }
-    .infinite-item:nth-child(10) { transform: rotateY(324deg) translateZ(400px); }
-  }
-  
-  @media (max-width: 767px) {
-    .infinite-item {
-      width: 200px;
-      height: 133px;
-    }
-    .infinite-carousel {
-      width: 200px;
-      height: 133px;
-    }
-    .infinite-item:nth-child(1) { transform: rotateY(0deg) translateZ(300px); }
-    .infinite-item:nth-child(2) { transform: rotateY(36deg) translateZ(300px); }
-    .infinite-item:nth-child(3) { transform: rotateY(72deg) translateZ(300px); }
-    .infinite-item:nth-child(4) { transform: rotateY(108deg) translateZ(300px); }
-    .infinite-item:nth-child(5) { transform: rotateY(144deg) translateZ(300px); }
-    .infinite-item:nth-child(6) { transform: rotateY(180deg) translateZ(300px); }
-    .infinite-item:nth-child(7) { transform: rotateY(216deg) translateZ(300px); }
-    .infinite-item:nth-child(8) { transform: rotateY(252deg) translateZ(300px); }
-    .infinite-item:nth-child(9) { transform: rotateY(288deg) translateZ(300px); }
-    .infinite-item:nth-child(10) { transform: rotateY(324deg) translateZ(300px); }
-  }
-  
-  @keyframes infinite-spin {
-    from { transform: rotateY(0deg); }
-    to { transform: rotateY(360deg); }
-  }
-  
-  .infinite-carousel:hover {
-    animation-play-state: paused;
-  }
+}

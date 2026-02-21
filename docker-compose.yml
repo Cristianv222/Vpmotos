@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: vpmotos_app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - API_BASE_URL=${API_BASE_URL}
+      - VPMOTOS_API_TOKEN=${VPMOTOS_API_TOKEN}
+    depends_on:
+      - db
+    networks:
+      - vpmotos_net
+    # Security: Read-only root filesystem (with exceptions for tmp)
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run/apache2
+      - /var/lock/apache2
+      # PHP sessions usually go to /tmp or /var/lib/php/sessions. 
+      # If app needs to write to specific dirs (like uploads), volumes should be mounted there.
+    volumes:
+      # DEVELOPMENT MODE: Mount the current directory to the container
+      # This allows changes to be reflected immediately without rebuilding.
+      - ./:/var/www/html
+      # Persist vendor directory to avoid overwriting it with local (possibly empty) vendor
+      # If you run 'composer install' locally, you can remove this line.
+      # - /var/www/html/vendor
+
+      # If you need to upload files, make sure the target directory is writable 
+      # or mounted as a volume.
+      # - ./images:/var/www/html/images
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  db:
+    image: mariadb:10.6
+    container_name: vpmotos_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - vpmotos_net
+    # Security: Database not exposed to host (no ports section)
+    # Only accessible within the vpmotos_net network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+  # Optional: PHPMyAdmin for management (only for dev/admin, behind auth ideally)
+  # Commented out for strict security unless requested
+  # phpmyadmin:
+  #   image: phpmyadmin/phpmyadmin
+  #   links:
+  #     - db
+  #   ports:
+  #     - "8081:80"
+  #   environment:
+  #     PMA_HOST: db
+  #   networks:
+  #     - vpmotos_net
+
+networks:
+  vpmotos_net:
+    driver: bridge
+  internal_innvventario_network:
+    external: true
+
+volumes:
+  db_data:
